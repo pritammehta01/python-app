@@ -1,0 +1,12 @@
+version: "3.8"
+
+services:
+  devops-python-app:
+    build: .
+    container_name: python-app
+    ports:
+      - "5000:5000"
+    environment:
+      - APP_NAME=Python Testing App
+      - APP_VERSION=1.1.0
+      - ENVIRONMENT=staging
