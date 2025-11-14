@@ -1,12 +1,13 @@
 version: "3.8"
 
 services:
-  devops-python-app:
-    build: .
+  python-app:
     container_name: python-app
+    image: 34.121.95.79:5000/pythonapp:latest   # <- your private registry image
     ports:
       - "5000:5000"
     environment:
       - APP_NAME=Python Testing App
       - APP_VERSION=1.1.0
       - ENVIRONMENT=staging
+
