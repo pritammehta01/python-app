@@ -2,9 +2,8 @@ pipeline {
     agent any
 
     environment {
-        REGISTRY_CREDENTIALS = credentials('private-docker-registry')   // Jenkins cred ID
-        REGISTRY_URL = "34.121.95.79:5000"
-        COMPOSE_PROJECT_NAME = "pythonapp"
+        DOCKERHUB = credentials('dockerhub-cred')
+        IMAGE = "pritammehta/pythonapp"
     }
 
     stages {
@@ -15,76 +14,46 @@ pipeline {
             }
         }
 
-        stage('Docker Login to Private Registry') {
-            steps {
-                sh '''
-                echo $REGISTRY_CREDENTIALS_PSW | docker login $REGISTRY_URL -u $REGISTRY_CREDENTIALS_USR --password-stdin
-                '''
-            }
-        }
-
         stage('Build Docker Image') {
             steps {
-                sh '''
-                # Build local image from Dockerfile in repo
-                docker build -t pythonapp:latest .
-
-                # Tag for private registry (build-number and latest)
-                docker tag pythonapp:latest $REGISTRY_URL/pythonapp:${BUILD_NUMBER}
-                docker tag pythonapp:latest $REGISTRY_URL/pythonapp:latest
-                '''
+                sh """
+                docker build -t ${IMAGE}:${BUILD_NUMBER} .
+                """
             }
         }
 
-        stage('Push Image to Private Registry') {
+        stage('DockerHub Login') {
             steps {
-                sh '''
-                docker push $REGISTRY_URL/pythonapp:${BUILD_NUMBER}
-                docker push $REGISTRY_URL/pythonapp:latest
-                '''
+                sh """
+                echo ${DOCKERHUB_PSW} | docker login -u ${DOCKERHUB_USR} --password-stdin
+                """
             }
         }
 
-        stage('Pull Image (verify from registry)') {
+        stage('Push to DockerHub') {
             steps {
-                sh '''
-                docker pull $REGISTRY_URL/pythonapp:latest
-                '''
+                sh """
+                docker push ${IMAGE}:${BUILD_NUMBER}
+                """
             }
         }
 
-        stage('Deploy with Docker Compose') {
+        stage('Deploy to Kubernetes') {
             steps {
-                sh '''
-                # Ensure latest image from registry is used
-                docker pull $REGISTRY_URL/pythonapp:latest
-
-                # Bring down old containers (support both docker compose and docker-compose)
-                docker-compose down || true
-
-                # Bring up with new image
-                docker-compose up -d
-                '''
-            }
-        }
-
-        stage('Cleanup Old Images') {
-            steps {
-                sh '''
-                docker image prune -f
-                '''
+                sh """
+                kubectl set image deployment/python-deployment pythonapp=${IMAGE}:${BUILD_NUMBER}
+                kubectl rollout status deployment/python-deployment
+                """
             }
         }
     }
 
     post {
         success {
-            echo 'Deployment successful!'
-            sh 'docker ps'
+            echo "Deployed NEW image version: ${BUILD_NUMBER}"
         }
         failure {
-            echo 'Deployment failed.'
+            echo "Deployment FAILED."
         }
     }
 }
-
