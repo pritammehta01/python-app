@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: pythonapp
-        image: pritammehta/pythonapp:0  # this will be overwritten by Jenkins
+        image: pritammehta/pythonapp:3  # this will be overwritten by Jenkins
         imagePullPolicy: Always
         ports:
         - containerPort: 5000
