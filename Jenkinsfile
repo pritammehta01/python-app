@@ -98,8 +98,9 @@ pipeline {
             steps {
                 withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
                     sh """
-                    kubectl --kubeconfig=$KUBECONFIG set image deployment/python-app pythonapp=${IMAGE}:${BUILD_NUMBER}
-                    kubectl --kubeconfig=$KUBECONFIG rollout status deployment/python-app --timeout=120s
+                    kubectl --kubeconfig=$KUBECONFIG set image deployment/python-deployment pythonapp=${IMAGE}:${BUILD_NUMBER}
+                    kubectl --kubeconfig=$KUBECONFIG rollout status deployment/python-deployment --timeout=120s
+
 
                     """
                 }
